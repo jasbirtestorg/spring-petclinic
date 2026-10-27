@@ -46,13 +46,18 @@ public interface VetRepository extends Repository<Vet, Integer> {
 	Collection<Vet> findAll() throws DataAccessException;
 
 	/**
-	 * Retrieve all <code>Vet</code>s from data store in Pages
-	 * @param pageable
-	 * @return
-	 * @throws DataAccessException
+	 * Retrieve all <code>Vet</code>s from data store in Pages.
+	 * <p>
+	 * Uses a dedicated cache ({@code vets_page}) rather than sharing the {@code vets}
+	 * cache with {@link #findAll()}. The two overloads return different value types
+	 * ({@link Page} vs {@link Collection}); sharing a cache risks a key collision that
+	 * would hand a caller the wrong value type.
+	 * @param pageable the pagination information
+	 * @return a {@link Page} of <code>Vet</code>s
+	 * @throws DataAccessException if the data store cannot be accessed
 	 */
 	@Transactional(readOnly = true)
-	@Cacheable("vets")
+	@Cacheable("vets_page")
 	Page<Vet> findAll(Pageable pageable) throws DataAccessException;
 
 }

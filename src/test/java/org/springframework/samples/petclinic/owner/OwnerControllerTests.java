@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -144,6 +145,39 @@ class OwnerControllerTests {
 		Page<Owner> tasks = new PageImpl<>(List.of(george(), new Owner()));
 		when(this.owners.findByLastNameStartingWith(anyString(), any(Pageable.class))).thenReturn(tasks);
 		mockMvc.perform(get("/owners?page=1")).andExpect(status().isOk()).andExpect(view().name("owners/ownersList"));
+	}
+
+	@Test
+	void processFindFormWindowsPaginationForLargeResultSets() throws Exception {
+		// Simulate a broad search matching many owners across many pages. The pagination
+		// control must render only a small window of page-number links, not one link per
+		// page (which produced a huge, slow response). All pages stay reachable via the
+		// first/prev/next/last controls and direct ?page= URLs.
+		List<Owner> twoOnThisPage = List.of(george(), new Owner());
+		Page<Owner> bigPage = new PageImpl<>(twoOnThisPage, PageRequest.of(0, 5), 1000); // 200
+																							// pages
+		when(this.owners.findByLastNameStartingWith(anyString(), any(Pageable.class))).thenReturn(bigPage);
+
+		mockMvc.perform(get("/owners?page=1"))
+			.andExpect(status().isOk())
+			.andExpect(view().name("owners/ownersList"))
+			.andExpect(model().attribute("totalPages", is(200)))
+			.andExpect(model().attribute("startPage", is(1)))
+			.andExpect(model().attribute("endPage", is(OwnerController.PAGINATION_WINDOW)));
+	}
+
+	@Test
+	void processFindFormCentresPaginationWindowOnCurrentPage() throws Exception {
+		List<Owner> twoOnThisPage = List.of(george(), new Owner());
+		Page<Owner> bigPage = new PageImpl<>(twoOnThisPage, PageRequest.of(49, 5), 1000); // 200
+																							// pages
+		when(this.owners.findByLastNameStartingWith(anyString(), any(Pageable.class))).thenReturn(bigPage);
+
+		// Page 50 of 200: window is centred and stays width PAGINATION_WINDOW.
+		mockMvc.perform(get("/owners?page=50"))
+			.andExpect(status().isOk())
+			.andExpect(model().attribute("startPage", is(48)))
+			.andExpect(model().attribute("endPage", is(52)));
 	}
 
 	@Test

@@ -118,10 +118,31 @@ class OwnerController {
 		return addPaginationModel(page, model, ownersResults);
 	}
 
+	/**
+	 * Number of page-number links rendered in the pagination control. Broad searches can
+	 * match thousands of owners (hundreds of pages); rendering a link for every page
+	 * produces an unnecessarily large response and slow template rendering. The strip is
+	 * windowed around the current page instead. All pages remain reachable via the
+	 * first/previous/next/last controls and direct {@code ?page=} URLs, so paging
+	 * behaviour is unchanged.
+	 */
+	static final int PAGINATION_WINDOW = 5;
+
 	private String addPaginationModel(int page, Model model, Page<Owner> paginated) {
 		List<Owner> listOwners = paginated.getContent();
+		int totalPages = paginated.getTotalPages();
+
+		// Sliding window of page numbers centred on the current page, clamped to
+		// [1, totalPages].
+		int half = PAGINATION_WINDOW / 2;
+		int startPage = Math.max(1, page - half);
+		int endPage = Math.min(totalPages, startPage + PAGINATION_WINDOW - 1);
+		startPage = Math.max(1, endPage - PAGINATION_WINDOW + 1);
+
 		model.addAttribute("currentPage", page);
-		model.addAttribute("totalPages", paginated.getTotalPages());
+		model.addAttribute("totalPages", totalPages);
+		model.addAttribute("startPage", startPage);
+		model.addAttribute("endPage", endPage);
 		model.addAttribute("totalItems", paginated.getTotalElements());
 		model.addAttribute("listOwners", listOwners);
 		return "owners/ownersList";

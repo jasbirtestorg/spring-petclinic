@@ -31,7 +31,7 @@
   <div th:if="${totalPages > 1}">
     <span th:text="#{pages}">Pages:</span>
     <span>[</span>
-    <span th:each="i: ${#numbers.sequence(1, totalPages)}">
+    <span th:each="i: ${#numbers.sequence(startPage, endPage)}">
       <a th:if="${currentPage != i}" th:href="@{'/owners?page=' + ${i}}">[[${i}]]</a>
       <span th:unless="${currentPage != i}">[[${i}]]</span>
     </span>

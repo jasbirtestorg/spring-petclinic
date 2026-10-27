@@ -49,6 +49,9 @@ import org.springframework.web.client.RestTemplate;
 import org.testcontainers.DockerClientFactory;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, properties = { "spring.docker.compose.skip.in-tests=false", //
+		// The throwaway Postgres container starts empty; initialize the idempotent
+		// schema/seed for the test (production Cloud SQL keeps the default "never").
+		"spring.sql.init.mode=always", //
 		"spring.docker.compose.start.arguments=--force-recreate,--renew-anon-volumes,postgres" })
 @ActiveProfiles("postgres")
 @DisabledInNativeImage
